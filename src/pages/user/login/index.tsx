@@ -91,52 +91,16 @@ const Login: React.FC = () => {
         <div style={{ width: '100%', maxWidth: 420 }}>
           {/* TodayMall 전용 로고 */}
           <div style={{ textAlign: 'center', marginBottom: 48 }}>
-            <div
+            <img
+              src="/logo.png"
+              alt="logo"
               style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                background: 'linear-gradient(135deg, #722ed1, #ff4d4f)',
-                width: 96,
-                height: 96,
-                borderRadius: '50%',
-                marginBottom: 24,
-                boxShadow: '0 12px 30px rgba(114, 46, 209, 0.3)',
+                width: 200,
+                height: 80,
+                // marginBottom: 24,
+                objectFit: 'contain',
               }}
-            >
-              <span
-                style={{
-                  fontSize: 42,
-                  fontWeight: 900,
-                  color: '#fff',
-                  letterSpacing: -2,
-                }}
-              >
-                T
-              </span>
-              <span
-                style={{
-                  fontSize: 28,
-                  fontWeight: 700,
-                  color: '#fff',
-                  marginLeft: -8,
-                }}
-              >
-                E
-              </span>
-            </div>
-            <h2
-              style={{
-                margin: 0,
-                fontSize: 32,
-                fontWeight: 800,
-                background: 'linear-gradient(90deg, #722ed1, #ff4d4f)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-              }}
-            >
-              TodayMall
-            </h2>
+            />
             <p style={{ margin: '8px 0 0', color: '#888', fontSize: 16 }}>
               관리자 시스템
             </p>

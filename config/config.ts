@@ -152,6 +152,11 @@ export default defineConfig({
     // 解决首次加载时白屏的问题
     { src: join(PUBLIC_PATH, 'scripts/loading.js'), async: true },
   ],
+  /**
+   * @name favicon 配置
+   * @description 配置浏览器标签页图标
+   */
+  favicons: ['/favicon.png'],
   //================ pro 插件配置 =================
   presets: ['umi-presets-pro'],
   /**
