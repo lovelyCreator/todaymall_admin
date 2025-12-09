@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Login API</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #722ed1;
+            margin-top: 0;
+        }
+        button {
+            background: linear-gradient(90deg, #722ed1, #ff4d4f);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 6px;
+            background: #f0f0f0;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Test Login API</h1>
+        <p>This page tests if the mock login API is working correctly.</p>
+        
+        <div>
+            <button onclick="testAdminLogin()">Test Admin Login</button>
+            <button onclick="testUserLogin()">Test User Login</button>
+            <button onclick="testWrongPassword()">Test Wrong Password</button>
+        </div>
+        
+        <div id="result"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000';
+        
+        async function testLogin(username, password, testName) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.className = 'info';
+            resultDiv.textContent = `Testing ${testName}...\n\nSending request to: ${API_BASE}/api/login/account`;
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/login/account`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        username: username,
+                        password: password,
+                        type: 'account'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'ok') {
+                    resultDiv.className = 'success';
+                    resultDiv.textContent = `✅ ${testName} - SUCCESS!\n\n` +
+                        `Response:\n${JSON.stringify(data, null, 2)}\n\n` +
+                        `Status: ${response.status}\n` +
+                        `Authority: ${data.currentAuthority}`;
+                } else {
+                    resultDiv.className = 'error';
+                    resultDiv.textContent = `❌ ${testName} - FAILED\n\n` +
+                        `Response:\n${JSON.stringify(data, null, 2)}\n\n` +
+                        `Status: ${response.status}`;
+                }
+            } catch (error) {
+                resultDiv.className = 'error';
+                resultDiv.textContent = `❌ ${testName} - ERROR\n\n` +
+                    `Error: ${error.message}\n\n` +
+                    `Make sure the dev server is running on ${API_BASE}\n` +
+                    `Run: npm start`;
+            }
+        }
+        
+        function _testAdminLogin() {
+            testLogin('admin', 'ant.design', 'Admin Login');
+        }
+        
+        function _testUserLogin() {
+            testLogin('user', 'ant.design', 'User Login');
+        }
+        
+        function _testWrongPassword() {
+            testLogin('admin', 'wrongpassword', 'Wrong Password');
+        }
+    </script>
+</body>
+</html>

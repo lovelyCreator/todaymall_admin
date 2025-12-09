@@ -1,0 +1,175 @@
+﻿import type { RequestOptions } from '@@/plugin-request/request';
+import type { RequestConfig } from '@umijs/max';
+import { message, notification } from 'antd';
+import { useAuthStore } from '@/stores/authStore';
+
+// 错误处理方案： 错误类型
+enum ErrorShowType {
+  SILENT = 0,
+  WARN_MESSAGE = 1,
+  ERROR_MESSAGE = 2,
+  NOTIFICATION = 3,
+  REDIRECT = 9,
+}
+// 与后端约定的响应数据格式
+interface ResponseStructure {
+  success: boolean;
+  data: any;
+  errorCode?: number;
+  errorMessage?: string;
+  showType?: ErrorShowType;
+}
+
+/**
+ * @name 错误处理
+ * pro 自带的错误处理， 可以在这里做自己的改动
+ * @doc https://umijs.org/docs/max/request#配置
+ */
+export const errorConfig: RequestConfig = {
+  // 错误处理： umi@3 的错误处理方案。
+  errorConfig: {
+    // 错误抛出
+    errorThrower: (res) => {
+      const response = res as unknown as any;
+      // Handle new API format (status: 'success' or 'error')
+      if (response?.status === 'error' || response?.status === 'failed') {
+        const error: any = new Error(response?.message || 'Request failed');
+        error.name = 'BizError';
+        error.info = { 
+          errorCode: response?.statusCode, 
+          errorMessage: response?.message, 
+          showType: ErrorShowType.ERROR_MESSAGE, 
+          data: response?.data 
+        };
+        throw error;
+      }
+      // Handle old format (success: boolean)
+      const { success, data, errorCode, errorMessage, showType } =
+        res as unknown as ResponseStructure;
+      if (success === false) {
+        const error: any = new Error(errorMessage);
+        error.name = 'BizError';
+        error.info = { errorCode, errorMessage, showType, data };
+        throw error; // 抛出自制的错误
+      }
+    },
+    // 错误接收及处理
+    errorHandler: (error: any, opts: any) => {
+      if (opts?.skipErrorHandler) throw error;
+      // 我们的 errorThrower 抛出的错误。
+      if (error.name === 'BizError') {
+        const errorInfo: ResponseStructure | undefined = error.info;
+        if (errorInfo) {
+          const { errorMessage, errorCode } = errorInfo;
+          switch (errorInfo.showType) {
+            case ErrorShowType.SILENT:
+              // do nothing
+              break;
+            case ErrorShowType.WARN_MESSAGE:
+              message.warning(errorMessage);
+              break;
+            case ErrorShowType.ERROR_MESSAGE:
+              message.error(errorMessage);
+              break;
+            case ErrorShowType.NOTIFICATION:
+              notification.open({
+                description: errorMessage,
+                message: errorCode,
+              });
+              break;
+            case ErrorShowType.REDIRECT:
+              // TODO: redirect
+              break;
+            default:
+              message.error(errorMessage);
+          }
+        }
+      } else if (error.response) {
+        // Axios 的错误
+        // 请求成功发出且服务器也响应了状态码，但状态代码超出了 2xx 的范围
+        const status = error.response.status;
+        const statusText = error.response.statusText;
+        const url = error.config?.url;
+        const baseURL = error.config?.baseURL;
+        const fullUrl = `${baseURL || ''}${url || ''}`;
+        
+        console.error('❌ HTTP Error Response:', {
+          status,
+          statusText,
+          url,
+          baseURL,
+          fullUrl,
+          data: error.response.data,
+          headers: error.response.headers,
+        });
+        
+        if (status === 404) {
+          message.error(`404 Not Found: ${fullUrl || url || 'Unknown endpoint'}`);
+        } else {
+          message.error(`Response status: ${status} ${statusText}`);
+        }
+      } else if (error.request) {
+        // 请求已经成功发起，但没有收到响应
+        // \`error.request\` 在浏览器中是 XMLHttpRequest 的实例，
+        // 而在node.js中是 http.ClientRequest 的实例
+        message.error('None response! Please retry.');
+      } else {
+        // 发送请求时出了点问题
+        message.error('Request error, please retry.');
+      }
+    },
+  },
+
+  // 请求拦截器
+  requestInterceptors: [
+    (config: RequestOptions) => {
+      // 拦截请求配置，进行个性化处理。
+      // 从 Zustand store 或 localStorage 获取 token 并添加到请求头
+      const token = useAuthStore.getState().token || localStorage.getItem('token');
+      
+      if (token) {
+        // Ensure headers object exists
+        if (!config.headers) {
+          config.headers = {};
+        }
+        
+        // Add Authorization header with Bearer token
+        config.headers = {
+          ...config.headers,
+          Authorization: `Bearer ${token}`,
+        };
+        
+        console.log('🔑 Adding auth token to request:', {
+          url: config.url,
+          method: config.method,
+          hasToken: !!token,
+          tokenPrefix: token.substring(0, 20) + '...',
+        });
+      } else {
+        console.warn('⚠️ No token found for request:', {
+          url: config.url,
+          method: config.method,
+        });
+      }
+      return config;
+    },
+  ],
+
+  // 响应拦截器
+  responseInterceptors: [
+    (response) => {
+      // 拦截响应数据，进行个性化处理
+      const { data } = response as unknown as any;
+
+      // Handle new API response format (status: 'success' or 'error')
+      if (data?.status === 'error' || data?.status === 'failed') {
+        message.error(data?.message || '请求失败！');
+      }
+      // Handle old format (success: false)
+      else if (data?.success === false) {
+        message.error('请求失败！');
+      }
+      return response;
+    },
+  ],
+};

@@ -1,0 +1,17 @@
+node_modules
+dist
+.git
+.github
+.husky
+.qodo
+tests
+*.md
+.editorconfig
+.gitignore
+.npmrc
+yarn-error.log
+npm-debug.log
+.DS_Store
+coverage
+.env.local
+.env.*.local
